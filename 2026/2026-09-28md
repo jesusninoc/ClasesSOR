@@ -1,0 +1,549 @@
+# UD3. Comprobación, virtualización y documentación del servidor
+
+## 3.1. Comprobación de la conectividad con los equipos cliente
+
+### Idea principal
+
+> **Un servidor no se da por bueno hasta que los clientes pueden llegar a él.**
+
+La comprobación debe hacerse **de lo más básico a lo más específico**.
+
+Orden recomendado:
+
+1. Configuración local del servidor.
+2. Conectividad del propio servidor.
+3. Conectividad cliente → servidor por IP.
+4. Resolución de nombres.
+5. Puerto y servicio.
+
+> **Remarcar:** si seguimos el orden, el primer fallo nos indica dónde buscar el problema.
+
+### 1. Configuración local
+
+Comprobar:
+
+- IP.
+- Máscara/prefijo.
+- Puerta de enlace.
+- DNS.
+- Interfaz de red activa.
+
+Linux:
+
+```bash
+ip -br address
+ip route
+```
+
+### 2. Conectividad básica
+
+Desde el servidor:
+
+```bash
+ping -c 4 192.0.2.1
+```
+
+- Si funciona → la conectividad básica es correcta.
+- Si falla → revisar red física/virtual, configuración y máscara.
+
+### 3. Cliente → servidor por IP
+
+Desde el cliente:
+
+```bash
+ping 192.0.2.10
+```
+
+- Si funciona → existe conectividad IP.
+- Si falla → todavía no tiene sentido revisar DNS o permisos.
+
+### 4. Resolución de nombres
+
+Windows:
+
+```powershell
+nslookup srv-datos
+```
+
+- Si funciona por IP pero no por nombre → problema de DNS/resolución de nombres.
+
+### 5. Puerto del servicio
+
+Linux:
+
+```bash
+ss -tulpn
+```
+
+Permite comprobar:
+- qué puertos están escuchando;
+- qué proceso los utiliza.
+
+Windows:
+
+```powershell
+Test-NetConnection 192.0.2.10 -Port 445
+```
+
+> **Remarcar:** aquí aparece una causa muy habitual: el servicio funciona, pero el cortafuegos bloquea el puerto.
+
+### Causas más frecuentes
+
+Si un cliente no llega al servidor, revisar:
+
+1. **Modo de red de la máquina virtual.**
+2. **IP o máscara incorrectas.**
+3. **Cortafuegos bloqueando el servicio.**
+4. **Servicio detenido.**
+
+> **REGLA DE DIAGNÓSTICO:** no cambiar cosas al azar. Comprobar, localizar el primer fallo y corregirlo.
+
+---
+
+## 3.2. Instalación en máquinas virtuales
+
+### Ventajas de virtualizar
+
+Permite:
+
+- Tener servidor y clientes en un único equipo.
+- Crear laboratorios completos.
+- Probar configuraciones.
+- Romper una instalación y repetirla.
+- Utilizar instantáneas para volver atrás.
+
+> **Idea clave:** la virtualización permite practicar escenarios reales sin necesidad de varios equipos físicos.
+
+### Recursos virtuales
+
+Asignar de forma razonable:
+
+- CPU.
+- RAM.
+- Disco.
+- Tarjetas de red.
+
+> **Remarcar:** asignar todos los recursos al servidor virtual puede dejar al equipo anfitrión sin recursos y hacer que todo funcione peor.
+
+### Disco virtual
+
+**Tamaño fijo**
+- Reserva el espacio desde el principio.
+- Puede ofrecer un rendimiento más estable.
+- Consume inmediatamente el espacio del almacenamiento real.
+
+**Expansión dinámica**
+- Crece según se necesita.
+- Aprovecha mejor el espacio inicialmente.
+- Puede terminar llenando el disco físico.
+
+### Modos de red
+
+**NAT**
+- La máquina virtual puede salir a Internet.
+- Los equipos externos normalmente no pueden iniciar conexiones hacia ella.
+- No es el modo adecuado para un servidor que deben alcanzar otros equipos.
+
+**Puente**
+- La máquina virtual aparece en la red como otro equipo.
+- Tiene su propia dirección IP.
+- Los clientes pueden acceder directamente a ella.
+
+> **Remarcar:** para un servidor que debe ser accesible desde otros equipos de la red, normalmente utilizaremos **modo puente**.
+
+**Solo anfitrión**
+- Crea una red aislada entre el anfitrión y las máquinas virtuales.
+- Muy útil para laboratorios aislados.
+
+### Complementos de la virtualización
+
+Instalar las herramientas/controladores del programa de virtualización cuando proceda:
+
+- Mejoran compatibilidad y rendimiento.
+- Facilitan determinadas funciones entre anfitrión e invitado.
+
+### Orden de arranque
+
+Durante la instalación:
+
+- Arrancar desde la ISO.
+
+Después:
+
+- Retirar la ISO o cambiar el orden de arranque.
+
+> **Error frecuente:** dejar la ISO montada y volver a arrancar accidentalmente el instalador.
+
+### Instantáneas
+
+Una instantánea:
+
+- Guarda el estado de una máquina virtual.
+- Permite volver a un estado anterior.
+- Es muy útil antes de una práctica o actualización.
+
+Pero:
+
+- **No es una copia de seguridad.**
+- Está en el mismo almacenamiento.
+- Puede afectar al rendimiento.
+- No protege frente a un fallo del disco físico.
+
+> **REGLA DE ORO:** utilizar instantáneas para volver atrás durante una práctica o cambio controlado; utilizar copias de seguridad para proteger los datos.
+
+---
+
+## 3.3. Documentación de la instalación y parte de incidencias
+
+### Idea principal
+
+> **La instalación no termina cuando el servidor arranca; termina cuando queda documentada.**
+
+La documentación permite:
+
+- Que otro técnico pueda hacerse cargo.
+- Reconstruir el servidor.
+- Conocer las decisiones tomadas.
+- Facilitar el mantenimiento.
+- Resolver incidencias futuras.
+
+### Ficha de instalación
+
+Debe recoger como mínimo:
+
+| Apartado | Información |
+|---|---|
+| Identificación | Nombre, ubicación/anfitrión, fecha y técnico |
+| Recursos | CPU, RAM, discos y tarjetas de red |
+| Sistema operativo | SO, edición, tipo y modo de instalación |
+| Particionado | Particiones, tamaños y sistemas de archivos |
+| Red | IP, máscara, puerta de enlace y DNS |
+| Roles/paquetes | Instalados y motivo |
+| Cuentas | Cuentas y política de contraseñas |
+| Licencias | Activación cuando sea necesaria |
+| Comprobaciones | Pruebas realizadas y resultado |
+
+> **Remarcar:** las contraseñas **no deben escribirse en la ficha**. Se guardan en el sistema seguro de gestión de credenciales correspondiente.
+
+### Parte de incidencias
+
+Registrar:
+
+- Fecha y hora.
+- Síntoma exacto.
+- Mensaje de error literal.
+- Causa identificada.
+- Solución aplicada.
+- Tiempo empleado.
+
+> **Remarcar:** no escribir "daba error"; escribir exactamente qué ocurrió.
+
+### Incidencias frecuentes
+
+| Problema | Causa habitual | Solución |
+|---|---|---|
+| No arranca desde la ISO | Orden de arranque o modo UEFI/BIOS incorrecto | Revisar arranque y medio |
+| No encuentra el disco | Falta controlador o modo de controladora no reconocido | Cargar controlador o revisar controladora |
+| Error de lectura durante instalación | ISO corrupta o medio defectuoso | Verificar ISO y rehacer medio |
+| Arranca pero no tiene red | Tarjeta no reconocida o interfaz incorrecta | Revisar interfaces/controlador/configuración |
+| Dos equipos tienen la misma IP | IP ya utilizada o clonación sin cambiar configuración | Comprobar IP y reservar direcciones |
+| Falla la actualización | Poco espacio o no hay acceso al repositorio | Liberar espacio y revisar red/DNS |
+| Hora incorrecta | Zona horaria o sincronización incorrecta | Corregir zona y sincronización |
+
+> **Idea clave:** el parte de incidencias se convierte en una base de conocimiento para futuros problemas.
+
+### Consejo profesional
+
+> **Documentar mientras se instala, no al terminar.**
+
+Lo que se intenta reconstruir de memoria suele contener errores.
+
+---
+
+## 3.4. Diagnóstico guiado: el servidor está instalado pero no da servicio
+
+### Situación
+
+Servidor:
+
+```text
+192.0.2.10/24
+```
+
+Puerta de enlace:
+
+```text
+192.0.2.1
+```
+
+Cliente:
+
+```text
+192.0.2.50/24
+```
+
+### Método de diagnóstico
+
+#### Paso 1. Configuración local
+
+```bash
+ip -br address
+```
+
+Comprobar que aparece:
+
+```text
+192.0.2.10/24
+```
+
+Si aparece una dirección:
+
+```text
+169.254.x.x
+```
+
+→ no se ha aplicado correctamente la configuración de red.
+
+#### Paso 2. Puerta de enlace
+
+```bash
+ping -c 4 192.0.2.1
+```
+
+Si responde:
+
+- la interfaz funciona;
+- la configuración básica es coherente;
+- existe conectividad con la red.
+
+Si falla en una máquina virtual:
+
+> **Primer sospechoso: modo de red incorrecto.**
+
+#### Paso 3. Cliente → servidor
+
+Desde el cliente:
+
+```text
+ping 192.0.2.10
+```
+
+Si falla:
+
+- comprobar configuración del cliente;
+- comprobar que ambos están en la misma red;
+- revisar cortafuegos.
+
+#### Paso 4. Servicio y cortafuegos
+
+En el servidor:
+
+```bash
+ss -tulpn
+```
+
+Comprobar:
+
+- ¿el servicio está arrancado?
+- ¿está escuchando en el puerto esperado?
+- ¿el cortafuegos permite el tráfico?
+
+Dos situaciones típicas:
+
+**No está escuchando**
+→ arrancar y habilitar el servicio.
+
+**Está escuchando pero no se puede acceder**
+→ revisar el cortafuegos.
+
+#### Paso 5. DNS
+
+Cuando ya funciona la conexión por IP:
+
+```powershell
+nslookup srv-datos
+```
+
+Si falla:
+
+- revisar DNS del cliente;
+- comprobar que el nombre está registrado;
+- comprobar que resuelve a la IP correcta.
+
+> **Remarcar:** si funciona por IP pero no por nombre, **no es un problema de conectividad IP**; es un problema de resolución de nombres.
+
+### Orden mental para diagnosticar
+
+```text
+¿Tiene IP?
+   ↓
+¿Llega a la puerta de enlace?
+   ↓
+¿El cliente llega por IP?
+   ↓
+¿El servicio escucha?
+   ↓
+¿El cortafuegos permite el puerto?
+   ↓
+¿Resuelve el nombre?
+```
+
+> **REGLA DE ORO:** avanzar de lo más básico a lo más específico. El primer fallo señala dónde buscar.
+
+---
+
+# 3.5. Servidores actuales: Windows Server, Linux y virtualización
+
+### Tendencia actual
+
+Los servidores actuales tienden a:
+
+- Utilizar menos componentes innecesarios.
+- Ejecutarse sin interfaz gráfica cuando no es necesaria.
+- Administrarse remotamente.
+- Ejecutarse sobre máquinas virtuales.
+- Utilizar contenedores.
+- Automatizar su despliegue.
+
+### Windows Server
+
+- Sistema propietario.
+- Versiones con soporte a largo plazo.
+- Integración con servicios Microsoft y nube.
+- Puede utilizar **Server Core**, sin interfaz gráfica completa.
+
+### Linux Server
+
+Ejemplos:
+
+- Ubuntu Server LTS.
+- Debian.
+- Rocky Linux.
+
+Características:
+
+- Software libre.
+- Estabilidad.
+- Amplio uso en servidores.
+- Habitualmente puede instalarse sin entorno gráfico.
+
+### ¿Por qué utilizar servidores sin GUI?
+
+- Menor consumo de recursos.
+- Menor cantidad de componentes.
+- Menor superficie de ataque.
+- Administración remota y por línea de comandos.
+
+> **Remarcar:** en un servidor no se instala una interfaz gráfica porque "quede más bonito"; se instala si aporta una utilidad real.
+
+### Formas de ejecutar servidores
+
+| Modelo | Característica |
+|---|---|
+| Servidor físico | Modelo tradicional |
+| Máquina virtual | Varios servidores sobre un mismo equipo |
+| Contenedor | Aísla aplicaciones/servicios y facilita el despliegue |
+
+> **Idea clave:** virtualización y contenedores permiten aprovechar mejor los recursos y facilitar el despliegue.
+
+---
+
+## 3.6. Aprovisionamiento automatizado y servidores en la nube
+
+### Automatización
+
+Configurar servidores manualmente:
+
+- consume tiempo;
+- puede provocar errores;
+- dificulta repetir exactamente la configuración.
+
+El **aprovisionamiento automatizado** permite describir la configuración deseada y aplicarla automáticamente.
+
+Ejemplo:
+
+**Ansible**
+
+Puede automatizar:
+
+- instalación de paquetes;
+- configuración;
+- servicios;
+- usuarios;
+- ajustes del sistema.
+
+> **Idea clave:** describimos cómo queremos que quede el servidor y la herramienta aplica esa configuración de forma repetible.
+
+### Ventajas
+
+- Rapidez.
+- Menos errores.
+- Configuración repetible.
+- Facilidad para reconstruir servidores.
+- Escalabilidad.
+
+### Nube: IaaS
+
+**IaaS = Infraestructura como Servicio**
+
+En lugar de comprar y mantener un servidor físico:
+
+- se utiliza infraestructura de un proveedor cloud;
+- se crea un servidor virtual;
+- se asignan recursos;
+- se paga según el servicio contratado;
+- se puede aumentar o reducir la capacidad.
+
+### Entornos híbridos
+
+Una organización puede combinar:
+
+- servidores propios;
+- máquinas virtuales;
+- servicios en la nube.
+
+> **Remarcar:** la administración de servidores evoluciona hacia **automatización + virtualización + nube**.
+
+---
+
+# Resumen de la unidad
+
+## Conceptos que deben quedar claros
+
+1. **Conectividad:** comprobar de lo más básico a lo más específico.
+2. **Diagnóstico:** el primer fallo indica dónde buscar.
+3. **IP vs nombre:** si funciona por IP pero no por nombre, revisar DNS.
+4. **Puertos:** comprobar que el servicio escucha y que el cortafuegos permite el tráfico.
+5. **Virtualización:** permite crear laboratorios completos sobre un único equipo.
+6. **NAT vs puente:** NAT facilita salida; puente permite que otros equipos accedan directamente al servidor.
+7. **Instantáneas:** permiten volver atrás, pero no sustituyen a las copias de seguridad.
+8. **Documentación:** registrar configuración, comprobaciones e incidencias.
+9. **Parte de incidencias:** registrar síntoma, causa y solución.
+10. **Servidores sin GUI:** reducen recursos y componentes innecesarios.
+11. **Contenedores:** aíslan servicios y facilitan su despliegue.
+12. **Automatización:** permite configurar servidores de forma rápida y repetible.
+13. **IaaS:** proporciona servidores virtuales bajo demanda en la nube.
+
+## Preguntas finales para la clase
+
+- ¿En qué orden comprobarías un servidor al que no puede acceder un cliente?
+- ¿Qué diferencia hay entre comprobar conectividad por IP y por nombre?
+- Si funciona `ping` por IP pero no por nombre, ¿dónde buscarías?
+- ¿Qué información proporciona `ss -tulpn`?
+- ¿Qué diferencia hay entre un puerto cerrado y un servicio detenido?
+- ¿Por qué NAT no suele ser adecuado para un servidor al que deben acceder otros equipos?
+- ¿Qué ventaja tiene el modo puente?
+- ¿Una instantánea es una copia de seguridad? ¿Por qué?
+- ¿Qué información debe aparecer en una ficha de instalación?
+- ¿Por qué no deben aparecer las contraseñas en la documentación?
+- ¿Qué información debe contener un parte de incidencias?
+- ¿Por qué conviene documentar mientras se instala?
+- ¿Qué ventajas tiene instalar un servidor sin interfaz gráfica?
+- ¿Qué diferencia hay entre una máquina virtual y un contenedor?
+- ¿Qué problema intenta solucionar Ansible?
+- ¿Qué significa IaaS?
+- ¿Hacia dónde está evolucionando la administración de servidores?
+
+## Idea final
+
+> **Un servidor no está terminado cuando arranca: está terminado cuando funciona, se puede comprobar, se puede diagnosticar y se puede reconstruir.**
